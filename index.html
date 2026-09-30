@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ampl — Tours &amp; the owner's calendar</title>
+<meta name="description" content="How a renter asks to see a home, how an owner keeps a calendar, and every way the two can go wrong.">
+<style>
+  :root {
+    --ground:#ffffff; --surface:#faf8f7; --sunk:#f3efec;
+    --ink:#171310; --ink-2:#6e635d; --ink-3:#9a8f88;
+    --line:#e8e2de; --line-2:#d8d0ca;
+    --accent:#ff481e; --accent-soft:#fff1ed;
+    --good:#2f7d5c; --good-soft:#eaf5f0;
+    --warn:#b25a12; --warn-soft:#fdf1e5;
+    --bad:#b3261e; --bad-soft:#fdecea;
+    --blue:#2d6ca8; --blue-soft:#e9f2fa;
+    --shadow:0 1px 2px rgba(23,19,16,.05), 0 10px 30px rgba(23,19,16,.05);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --rail:230px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:#100d0b; --surface:#181411; --sunk:#201a16;
+      --ink:#f5f0ec; --ink-2:#a2968e; --ink-3:#7b716a;
+      --line:#2a2320; --line-2:#3a312c;
+      --accent:#ff6440; --accent-soft:#2d1710;
+      --good:#5fb98d; --good-soft:#13241c;
+      --warn:#e08a3c; --warn-soft:#2a1d0f;
+      --bad:#e8695f; --bad-soft:#2b1513;
+      --blue:#6aa8dd; --blue-soft:#12212e;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased; }
+  .shell { max-width:1240px; margin:0 auto; padding:48px 26px 120px; display:flex; gap:44px; align-items:flex-start; }
+  .doc { min-width:0; flex:1; display:flex; flex-direction:column; gap:46px; }
+
+  nav.toc { position:sticky; top:28px; width:var(--rail); flex:0 0 var(--rail); font-size:13px; }
+  nav.toc .lbl { font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-3); margin-bottom:10px; }
+  nav.toc ol { list-style:none; margin:0 0 18px; padding:0; display:flex; flex-direction:column; gap:2px; }
+  nav.toc a { display:block; padding:3px 9px; border-left:2px solid var(--line); color:var(--ink-2); text-decoration:none; }
+  nav.toc a:hover { color:var(--ink); border-left-color:var(--accent); background:var(--surface); }
+
+  header.mast { display:flex; flex-direction:column; gap:14px; }
+  .eyebrow { font-family:var(--mono); font-size:11.5px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+  h1 { margin:0; font-size:clamp(32px,4.8vw,46px); font-weight:700; letter-spacing:-.04em; line-height:1.06; }
+  .standfirst { margin:0; max-width:64ch; font-size:18.5px; line-height:1.55; color:var(--ink-2); }
+  .meta { display:flex; flex-wrap:wrap; gap:6px 20px; font-family:var(--mono); font-size:11.5px; color:var(--ink-3); padding-top:4px; }
+
+  .part { border:1px solid var(--line); border-radius:15px; padding:22px 24px; background:var(--surface); box-shadow:var(--shadow); display:flex; flex-direction:column; gap:7px; }
+  .part .tag { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+  .part h2 { margin:0; font-size:clamp(24px,3.2vw,30px); font-weight:700; letter-spacing:-.035em; line-height:1.14; }
+  .part p { margin:0; color:var(--ink-2); max-width:70ch; }
+
+  section { display:flex; flex-direction:column; gap:16px; scroll-margin-top:24px; }
+  h3 { margin:0; font-size:21px; font-weight:650; letter-spacing:-.02em; line-height:1.25; }
+  h4 { margin:0; font-size:16px; font-weight:650; }
+  p, li { max-width:72ch; }
+  p { margin:0; }
+  ul, ol { margin:0; padding-left:22px; display:flex; flex-direction:column; gap:7px; }
+  code { font-family:var(--mono); font-size:.88em; background:var(--sunk); padding:1.5px 5px; border-radius:5px; }
+  strong { font-weight:650; }
+
+  figure { margin:0; border:1px solid var(--line); border-radius:14px; background:var(--surface); padding:20px 18px 14px; overflow-x:auto; }
+  figure svg { display:block; margin:0 auto; max-width:100%; height:auto; }
+  figcaption { margin-top:12px; font-size:13.5px; color:var(--ink-2); text-align:center; }
+  .svg-ink { fill:var(--ink); } .svg-ink2 { fill:var(--ink-2); } .svg-ink3 { fill:var(--ink-3); }
+  .svg-line { stroke:var(--line-2); fill:none; }
+  .svg-box { fill:var(--surface); stroke:var(--line-2); }
+  .svg-sunk { fill:var(--sunk); stroke:var(--line-2); }
+  text { font-family:var(--sans); }
+
+  table { border-collapse:collapse; width:100%; font-size:14.5px; }
+  th, td { text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); border-bottom-color:var(--line-2); }
+  .wrap { overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+  .wrap table { min-width:560px; }
+  .wrap th:first-child, .wrap td:first-child { padding-left:16px; }
+  .wrap tr:last-child td { border-bottom:none; }
+
+  .note { border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:0 11px 11px 0; padding:14px 17px; background:var(--surface); display:flex; flex-direction:column; gap:8px; }
+  .note.good { border-left-color:var(--good); background:var(--good-soft); }
+  .note.warn { border-left-color:var(--warn); background:var(--warn-soft); }
+  .note.bad  { border-left-color:var(--bad);  background:var(--bad-soft); }
+  .note .h { font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
+
+  .pill { display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding:2px 8px; border-radius:99px; border:1px solid var(--line-2); color:var(--ink-2); white-space:nowrap; }
+  .pill.now  { background:var(--bad-soft);  border-color:transparent; color:var(--bad); }
+  .pill.fix  { background:var(--good-soft); border-color:transparent; color:var(--good); }
+  .pill.open { background:var(--warn-soft); border-color:transparent; color:var(--warn); }
+
+  .pt { border:1px solid var(--line); border-radius:13px; overflow:hidden; background:var(--surface); }
+  .pt > div { padding:15px 18px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+  .pt > div:last-child { border-bottom:none; }
+  .pt .q { font-weight:650; font-size:15.5px; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  .pt .a, .pt .v { font-size:14.5px; color:var(--ink-2); }
+  .pt .v b { color:var(--ink); font-weight:650; }
+
+  hr { border:none; border-top:1px solid var(--line); margin:0; }
+  footer { color:var(--ink-3); font-size:13.5px; font-family:var(--mono); }
+  @media (max-width:980px) { nav.toc { display:none; } .shell { padding:32px 20px 90px; } }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="toc">
+  <div class="lbl">Contents</div>
+  <ol>
+    <li><a href="#today">0 · What exists today</a></li>
+    <li><a href="#shape">1 · The shape, end to end</a></li>
+    <li><a href="#calendar">2 · The owner's calendar</a></li>
+    <li><a href="#life">3 · A request's life</a></li>
+    <li><a href="#notours">4 · Two rules not ours to choose</a></li>
+    <li><a href="#pressure">5 · The pressure test</a></li>
+    <li><a href="#schema">6 · Schema &amp; API</a></li>
+    <li><a href="#open">7 · Open decisions</a></li>
+  </ol>
+</nav>
+
+<main class="doc">
+
+<header class="mast">
+  <div class="eyebrow">Ampl · Product specification</div>
+  <h1>Tours &amp; the owner's calendar</h1>
+  <p class="standfirst">
+    A renter asks to see a home — on a video call or in person. An owner keeps a
+    calendar that says when they are free and for how long. What happens between
+    those two sentences is most of this document.
+  </p>
+  <div class="meta">
+    <span>Status: proposal</span>
+    <span>Depends on: <code>docs/application-process.html</code></span>
+    <span>Audience: product, backend, both dashboards</span>
+  </div>
+</header>
+
+<!-- ─────────────────────────────────────────────────────────── PART 0 -->
+<div class="part">
+  <div class="tag">Part zero</div>
+  <h2>What exists today</h2>
+  <p>Nothing — and one absence matters more than the rest.</p>
+</div>
+
+<section id="today">
+  <div class="note bad">
+    <div class="h">The foundation that is missing</div>
+    <p>
+      <strong>Nothing in Ampl knows what time zone anything is in.</strong> There
+      is no <code>timezone</code> on a user, an owner or a property, and one
+      <code>astimezone(utc)</code> call in the entire codebase. Every timestamp
+      we store is an instant; not one of them is a <em>wall clock</em>.
+    </p>
+    <p>
+      That is fine for "created 3 days ago" and fatal for "2pm on the 13th". A
+      calendar is the first feature where the difference is the whole feature —
+      a renter in Mumbai reading a Toronto owner's 2pm, and a weekly rule that
+      has to survive the Sunday the clocks move. Everything in Part 2 is built
+      on getting this right first.
+    </p>
+  </div>
+
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Piece</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td>Tour / showing / viewing model</td><td><span class="pill now">none</span></td></tr>
+        <tr><td>Owner availability or calendar</td><td><span class="pill now">none</span></td></tr>
+        <tr><td>Time zone on user, owner or property</td><td><span class="pill now">none</span></td></tr>
+        <tr><td>"Is anybody living there now?"</td><td><span class="pill now">none</span> — and Part 4 needs it</td></tr>
+        <tr><td>Applications, with a thread per application</td><td><span class="pill fix">shipped</span></td></tr>
+        <tr><td>Messaging with attachments and notifications</td><td><span class="pill fix">shipped</span></td></tr>
+        <tr><td>Address released on approval</td><td><span class="pill fix">shipped</span> — and Part 4 collides with it</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    So this is a build, not a change, and the good news is the two things it
+    leans on are already there: an application already opens a thread, and that
+    thread already renders a live card from server data. A tour is a second kind
+    of card in the same thread.
+  </p>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 1 -->
+<div class="part">
+  <div class="tag">Part one</div>
+  <h2>The shape, end to end</h2>
+  <p>One picture of the whole thing before any of the detail.</p>
+</div>
+
+<section id="shape">
+  <figure>
+    <svg viewBox="0 0 880 330" role="img" aria-label="Flow from renter request to confirmed tour">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 z" fill="var(--ink-3)"/>
+        </marker>
+      </defs>
+
+      <text x="80" y="22" text-anchor="middle" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">RENTER</text>
+      <text x="440" y="22" text-anchor="middle" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">THE THREAD</text>
+      <text x="800" y="22" text-anchor="middle" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">OWNER</text>
+      <line x1="160" y1="32" x2="160" y2="316" class="svg-line" stroke-dasharray="3 4"/>
+      <line x1="720" y1="32" x2="720" y2="316" class="svg-line" stroke-dasharray="3 4"/>
+
+      <rect x="16" y="46" width="128" height="46" rx="10" class="svg-box"/>
+      <text x="80" y="66" text-anchor="middle" class="svg-ink" font-size="12.5" font-weight="600">Picks a slot</text>
+      <text x="80" y="82" text-anchor="middle" class="svg-ink2" font-size="11">13 Oct, 2pm · virtual</text>
+
+      <rect x="300" y="46" width="280" height="46" rx="10" class="svg-sunk"/>
+      <text x="440" y="66" text-anchor="middle" class="svg-ink" font-size="12.5" font-weight="600">Tour card appears in the thread</text>
+      <text x="440" y="82" text-anchor="middle" class="svg-ink2" font-size="11">both sides see the same card, live</text>
+      <line x1="144" y1="69" x2="296" y2="69" class="svg-line" marker-end="url(#ar)"/>
+      <line x1="584" y1="69" x2="736" y2="69" class="svg-line" marker-end="url(#ar)"/>
+
+      <rect x="736" y="46" width="128" height="46" rx="10" class="svg-box"/>
+      <text x="800" y="66" text-anchor="middle" class="svg-ink" font-size="12.5" font-weight="600">Sees the ask</text>
+      <text x="800" y="82" text-anchor="middle" class="svg-ink2" font-size="11">with who is asking</text>
+
+      <text x="440" y="118" text-anchor="middle" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10">THE OWNER DOES ONE OF THREE THINGS</text>
+
+      <rect x="16" y="134" width="260" height="58" rx="10" fill="var(--good-soft)" stroke="var(--good)" stroke-width="1"/>
+      <text x="146" y="156" text-anchor="middle" fill="var(--good)" font-size="12.5" font-weight="700">Accept</text>
+      <text x="146" y="174" text-anchor="middle" class="svg-ink2" font-size="11">slot is booked · calendar blocks</text>
+      <text x="146" y="187" text-anchor="middle" class="svg-ink2" font-size="11">2pm–4pm for everyone else</text>
+
+      <rect x="304" y="134" width="272" height="58" rx="10" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width="1"/>
+      <text x="440" y="156" text-anchor="middle" fill="var(--warn)" font-size="12.5" font-weight="700">Propose other times</text>
+      <text x="440" y="174" text-anchor="middle" class="svg-ink2" font-size="11">two or three, not one —</text>
+      <text x="440" y="187" text-anchor="middle" class="svg-ink2" font-size="11">the renter picks, and it is done</text>
+
+      <rect x="604" y="134" width="260" height="58" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-width="1"/>
+      <text x="734" y="156" text-anchor="middle" fill="var(--bad)" font-size="12.5" font-weight="700">Decline</text>
+      <text x="734" y="174" text-anchor="middle" class="svg-ink2" font-size="11">the slot is released</text>
+      <text x="734" y="187" text-anchor="middle" class="svg-ink2" font-size="11">back to whoever wants it</text>
+
+      <line x1="146" y1="196" x2="146" y2="228" class="svg-line" marker-end="url(#ar)"/>
+      <line x1="440" y1="196" x2="440" y2="228" class="svg-line" marker-end="url(#ar)"/>
+
+      <rect x="60" y="232" width="470" height="52" rx="10" class="svg-box"/>
+      <text x="295" y="254" text-anchor="middle" class="svg-ink" font-size="12.5" font-weight="600">Confirmed</text>
+      <text x="295" y="272" text-anchor="middle" class="svg-ink2" font-size="11">reminders to both · a link if virtual · the address if in person</text>
+
+      <text x="295" y="306" text-anchor="middle" class="svg-ink3" font-size="11">Everything above happens inside the thread the application already opened.</text>
+    </svg>
+    <figcaption>The whole flow. No new inbox, no new place to look — the tour lives in the conversation the two already have.</figcaption>
+  </figure>
+
+  <div class="note">
+    <div class="h">One change from the obvious design</div>
+    <p>
+      The middle box says <strong>propose other times</strong>, plural. The
+      obvious version is a counter-offer of one time, which is simply the same
+      round trip again with the roles swapped — and two people with busy weeks
+      can bounce a single suggestion back and forth for days. Two or three
+      options collapses it: the renter picks one and the tour is booked in that
+      tap, with no third message.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 2 -->
+<div class="part">
+  <div class="tag">Part two</div>
+  <h2>The owner's calendar</h2>
+  <p>
+    Three settings and one rule. The settings are what the owner fills in; the
+    rule is what turns them into bookable slots.
+  </p>
+</div>
+
+<section id="calendar">
+  <figure>
+    <svg viewBox="0 0 880 300" role="img" aria-label="How availability becomes slots and how a booking blocks them">
+      <text x="14" y="20" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">1 · THE OWNER SETS A WINDOW</text>
+      <rect x="14" y="30" width="700" height="34" rx="8" fill="var(--blue-soft)" stroke="var(--blue)"/>
+      <text x="364" y="52" text-anchor="middle" fill="var(--blue)" font-size="12.5" font-weight="600">Monday 13 Oct · 10:00 → 18:00 · America/Toronto</text>
+      <text x="730" y="52" class="svg-ink2" font-size="11">8 hours free</text>
+
+      <text x="14" y="94" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">2 · AND A SLOT LENGTH — SAY 2 HOURS</text>
+      <g>
+        <rect x="14" y="104" width="160" height="34" rx="8" class="svg-sunk"/><text x="94" y="126" text-anchor="middle" class="svg-ink2" font-size="12">10:00 – 12:00</text>
+        <rect x="188" y="104" width="160" height="34" rx="8" class="svg-sunk"/><text x="268" y="126" text-anchor="middle" class="svg-ink2" font-size="12">12:00 – 14:00</text>
+        <rect x="362" y="104" width="160" height="34" rx="8" class="svg-sunk"/><text x="442" y="126" text-anchor="middle" class="svg-ink2" font-size="12">14:00 – 16:00</text>
+        <rect x="536" y="104" width="160" height="34" rx="8" class="svg-sunk"/><text x="616" y="126" text-anchor="middle" class="svg-ink2" font-size="12">16:00 – 18:00</text>
+      </g>
+      <text x="730" y="126" class="svg-ink2" font-size="11">4 slots</text>
+
+      <text x="14" y="168" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">3 · A RENTER BOOKS 14:00</text>
+      <g>
+        <rect x="14" y="178" width="160" height="34" rx="8" class="svg-sunk"/><text x="94" y="200" text-anchor="middle" class="svg-ink2" font-size="12">open</text>
+        <rect x="188" y="178" width="160" height="34" rx="8" class="svg-sunk"/><text x="268" y="200" text-anchor="middle" class="svg-ink2" font-size="12">open</text>
+        <rect x="362" y="178" width="160" height="34" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="442" y="196" text-anchor="middle" fill="var(--accent)" font-size="12" font-weight="700">14:00 – 16:00</text>
+        <text x="442" y="208" text-anchor="middle" fill="var(--accent)" font-size="10.5">booked · Priya</text>
+        <rect x="536" y="178" width="160" height="34" rx="8" class="svg-sunk"/><text x="616" y="200" text-anchor="middle" class="svg-ink2" font-size="12">open</text>
+      </g>
+
+      <text x="14" y="242" class="svg-ink3" font-family="ui-monospace,monospace" font-size="10.5" letter-spacing="1">4 · THE WHOLE RANGE GOES, NOT THE START TIME</text>
+      <rect x="362" y="252" width="160" height="30" rx="8" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="4 3"/>
+      <text x="442" y="272" text-anchor="middle" fill="var(--bad)" font-size="11.5" font-weight="600">14:00 – 16:00 blocked</text>
+      <text x="536" y="272" class="svg-ink2" font-size="11">— nobody else can take 14:00, 15:00 or any part of it</text>
+    </svg>
+    <figcaption>A window, divided by the slot length, is the list of bookable times. Booking one removes the whole range it covers — not just the instant it starts.</figcaption>
+  </figure>
+
+  <h3>The three settings</h3>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Setting</th><th>What it means</th><th>Why it has to exist</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Windows</strong></td>
+          <td>"Mon–Fri 10:00–18:00", or one-off "Sat 18 Oct 11:00–14:00"</td>
+          <td>Recurring covers the normal week; one-offs cover the week that is not normal. Without both, an owner keeps editing a rule to mean an exception.</td>
+        </tr>
+        <tr>
+          <td><strong>Slot length</strong></td>
+          <td>Per tour kind. Say 30 min virtual, 2 hours in person.</td>
+          <td>They are different jobs. A video call is a call; an in-person viewing includes getting there, waiting for a lift, and answering questions in a hallway.</td>
+        </tr>
+        <tr>
+          <td><strong>Buffers &amp; limits</strong></td>
+          <td>Gap after a tour, minimum notice, how far ahead, max per day</td>
+          <td>See scenarios 6, 7 and 12. Each one is a real way a calendar becomes unusable.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <div class="h">Whose calendar is it — the owner's or the property's?</div>
+    <p>
+      <strong>The owner's.</strong> An owner with twelve properties still has one
+      body and one afternoon. If availability were per property, the same 2pm
+      would be bookable twelve times over and the owner would be double-booked
+      by design.
+    </p>
+    <p>
+      So windows belong to the owner, and a booking on <em>any</em> property
+      blocks that time across <em>all</em> of them. Per-property settings still
+      make sense for the things that really are about the property — whether it
+      can be toured in person at all, and whether somebody is living there.
+    </p>
+  </div>
+
+  <h3>The one rule that makes it work</h3>
+  <p>
+    A slot is bookable when it is <em>inside</em> a window, <em>not overlapping</em>
+    anything already booked or held, and <em>past</em> the minimum notice. That is
+    the whole calculation, and it has to run on the server — a client that
+    computes its own list of free slots will be wrong the moment somebody else
+    books one while the page is open.
+  </p>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 3 -->
+<div class="part">
+  <div class="tag">Part three</div>
+  <h2>A request's life</h2>
+  <p>Six states. Two of them are the ones people forget.</p>
+</div>
+
+<section id="life">
+  <figure>
+    <svg viewBox="0 0 880 250" role="img" aria-label="States a tour request moves through">
+      <defs>
+        <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 z" fill="var(--ink-3)"/>
+        </marker>
+      </defs>
+
+      <rect x="18" y="80" width="126" height="42" rx="21" fill="var(--blue-soft)" stroke="var(--blue)"/>
+      <text x="81" y="100" text-anchor="middle" fill="var(--blue)" font-size="12.5" font-weight="700">requested</text>
+      <text x="81" y="114" text-anchor="middle" class="svg-ink2" font-size="10">slot held, softly</text>
+
+      <line x1="144" y1="101" x2="196" y2="101" class="svg-line" marker-end="url(#ar2)"/>
+
+      <rect x="200" y="20" width="126" height="42" rx="21" fill="var(--warn-soft)" stroke="var(--warn)"/>
+      <text x="263" y="40" text-anchor="middle" fill="var(--warn)" font-size="12.5" font-weight="700">countered</text>
+      <text x="263" y="54" text-anchor="middle" class="svg-ink2" font-size="10">2–3 other times</text>
+      <path d="M144,95 C170,95 174,45 196,42" class="svg-line" marker-end="url(#ar2)"/>
+      <path d="M326,42 C352,42 356,92 380,98" class="svg-line" marker-end="url(#ar2)"/>
+
+      <rect x="384" y="80" width="126" height="42" rx="21" fill="var(--good-soft)" stroke="var(--good)"/>
+      <text x="447" y="100" text-anchor="middle" fill="var(--good)" font-size="12.5" font-weight="700">confirmed</text>
+      <text x="447" y="114" text-anchor="middle" class="svg-ink2" font-size="10">calendar blocked</text>
+
+      <line x1="510" y1="101" x2="562" y2="101" class="svg-line" marker-end="url(#ar2)"/>
+      <rect x="566" y="80" width="126" height="42" rx="21" class="svg-box"/>
+      <text x="629" y="100" text-anchor="middle" class="svg-ink" font-size="12.5" font-weight="700">completed</text>
+      <text x="629" y="114" text-anchor="middle" class="svg-ink2" font-size="10">the time passed</text>
+
+      <rect x="200" y="164" width="126" height="42" rx="21" fill="var(--bad-soft)" stroke="var(--bad)"/>
+      <text x="263" y="184" text-anchor="middle" fill="var(--bad)" font-size="12.5" font-weight="700">declined</text>
+      <text x="263" y="198" text-anchor="middle" class="svg-ink2" font-size="10">owner said no</text>
+      <path d="M144,110 C170,110 174,160 196,166" class="svg-line" marker-end="url(#ar2)"/>
+
+      <rect x="384" y="164" width="126" height="42" rx="21" class="svg-box" stroke-dasharray="4 3"/>
+      <text x="447" y="184" text-anchor="middle" class="svg-ink2" font-size="12.5" font-weight="700">cancelled</text>
+      <text x="447" y="198" text-anchor="middle" class="svg-ink3" font-size="10">either side, before</text>
+      <path d="M447,124 L447,160" class="svg-line" marker-end="url(#ar2)"/>
+
+      <rect x="566" y="164" width="126" height="42" rx="21" class="svg-box" stroke-dasharray="4 3"/>
+      <text x="629" y="184" text-anchor="middle" class="svg-ink2" font-size="12.5" font-weight="700">expired</text>
+      <text x="629" y="198" text-anchor="middle" class="svg-ink3" font-size="10">nobody answered</text>
+      <path d="M100,124 C100,210 480,232 629,210" class="svg-line" stroke-dasharray="3 4" marker-end="url(#ar2)"/>
+
+      <text x="740" y="185" class="svg-ink3" font-size="11">Dashed = nobody</text>
+      <text x="740" y="200" class="svg-ink3" font-size="11">chose it. See 8 and 9.</text>
+    </svg>
+    <figcaption>The two dashed states are the ones a first version always forgets: a tour nobody answered, and a tour somebody cancelled. Both leave a slot that must go back on the calendar.</figcaption>
+  </figure>
+
+  <div class="note">
+    <div class="h">Why <code>requested</code> holds the slot</div>
+    <p>
+      This is the decision the whole feature turns on, and both obvious answers
+      are wrong.
+    </p>
+    <p>
+      <strong>If a request does not hold the slot:</strong> two renters both ask
+      for 2pm, the owner accepts both, and one of them turns up to a video call
+      that is not happening. The system produced that.
+    </p>
+    <p>
+      <strong>If a request holds it forever:</strong> one person asks for every
+      slot in October and the calendar is dead, for free, with no account
+      needed beyond an email.
+    </p>
+    <p>
+      So it holds <em>softly</em>: the slot is reserved while the request is
+      open, and the hold expires on its own — twenty-four hours, or when the
+      slot's notice period runs out, whichever is sooner. A cap on open requests
+      per renter does the rest.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 4 -->
+<div class="part">
+  <div class="tag">Part four</div>
+  <h2>Two rules not ours to choose</h2>
+  <p>One comes from law, one from a promise Ampl already made.</p>
+</div>
+
+<section id="notours">
+  <div class="note bad">
+    <div class="h">1 · An occupied unit cannot be shown on short notice</div>
+    <p>
+      Ontario's Residential Tenancies Act requires a landlord to give the person
+      <em>currently living there</em> at least <strong>24 hours' written
+      notice</strong> before entering to show the unit, stating the day and a
+      time between 8am and 8pm.
+    </p>
+    <p>
+      A calendar that offers "today at 4pm" on an occupied unit is inviting an
+      owner to break that, and Ampl would be the tool that scheduled it. We do
+      not even record whether somebody lives there — see Part 0.
+    </p>
+    <p>
+      <strong>So:</strong> the listing gains "is anybody living there now?". If
+      yes, in-person slots enforce a minimum 24-hour notice regardless of the
+      owner's own setting, only offer 8am–8pm, and the confirmation generates
+      the notice text the owner can send. Virtual tours are unaffected — nobody
+      is entering anything.
+    </p>
+  </div>
+
+  <div class="note warn">
+    <div class="h">2 · An in-person tour needs the address, and we withhold it</div>
+    <p>
+      <code>docs/application-process.html</code>, Part 4 is explicit: the exact
+      address is released when an application is <em>approved</em>, and never
+      before. An in-person tour is a person standing at a door two weeks before
+      any approval exists.
+    </p>
+    <p>
+      There is no clever way around this, so it is a decision rather than a
+      workaround: <strong>a confirmed in-person tour is a second unlock</strong>
+      — for that renter, for that property, released at confirmation.
+    </p>
+    <p>
+      The narrower alternative is to release it a few hours before the tour and
+      re-lock afterwards if the tour is cancelled. That is tidier on paper and
+      worse in practice: somebody planning their Saturday needs to know on
+      Tuesday whether the place is a twenty-minute walk or two buses. Confirming
+      an in-person tour is already a deliberate act by the owner — which is
+      exactly the gate the address rule was asking for.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 5 -->
+<div class="part">
+  <div class="tag">Part five</div>
+  <h2>The pressure test</h2>
+  <p>
+    Sixteen ways this breaks. Each one is a decision somebody will otherwise
+    make by accident at two in the morning.
+  </p>
+</div>
+
+<section id="pressure">
+  <div class="pt">
+
+    <div>
+      <div class="q">1. Whose 2pm? <span class="pill now">breaks everything</span></div>
+      <div class="a">Owner in Toronto, renter in Mumbai. The renter picks "2pm" from a list. Nothing in Ampl currently knows which 2pm that is.</div>
+      <div class="v"><b>Do:</b> the property carries a time zone, derived from its coordinates and stored on the listing. Every slot is computed and stored in UTC; every screen shows the viewer's own zone <em>and</em> names the property's — "2:00pm Toronto · 11:30pm your time". Never a bare "2pm".</div>
+    </div>
+
+    <div>
+      <div class="q">2. The clocks change <span class="pill now">breaks twice a year</span></div>
+      <div class="a">"Tuesdays, 2–6pm" is a wall-clock rule. Stored as a UTC offset it silently becomes 1–5pm on the first Tuesday of November.</div>
+      <div class="v"><b>Do:</b> store recurring windows as local wall-clock plus a zone name, and resolve them to instants per date. The one hour that repeats and the one that does not exist are then the library's problem, not ours. Store <em>bookings</em> as instants — those are fixed points, not rules.</div>
+    </div>
+
+    <div>
+      <div class="q">3. Two renters confirm the same slot in the same second</div>
+      <div class="a">Both requests passed the "is it free" check before either was written. An application-level check cannot prevent this; it can only lose the race more slowly.</div>
+      <div class="v"><b>Do:</b> a database exclusion constraint on the owner's booked ranges — Postgres will refuse the second overlapping row itself. The loser gets "somebody just took that one" and a refreshed list, which is the truth.</div>
+    </div>
+
+    <div>
+      <div class="q">4. Two properties, one owner, same afternoon</div>
+      <div class="a">A tour is booked on the Bloor flat at 2pm. The Dundas listing still shows 2pm as free, because its own calendar knows nothing about it.</div>
+      <div class="v"><b>Do:</b> availability and bookings belong to the <em>owner</em>, not the property. One body, one afternoon. Per-property settings are only for things that are genuinely about the property.</div>
+    </div>
+
+    <div>
+      <div class="q">5. Back-to-back in-person tours across town</div>
+      <div class="a">2–4pm in Scarborough, 4–6pm in Etobicoke. Both are inside the owner's window and neither overlaps.</div>
+      <div class="v"><b>Do:</b> a buffer after every tour, and a larger one when consecutive in-person tours are at different properties. v1 can use a flat travel buffer the owner sets; measuring the real distance is a later refinement and the flat number is already the difference between a usable day and an impossible one.</div>
+    </div>
+
+    <div>
+      <div class="q">6. "Can you do 6:45 this evening?" <span class="pill open">judgement</span></div>
+      <div class="a">Nothing stops a renter booking a slot fifteen minutes from now.</div>
+      <div class="v"><b>Do:</b> a minimum notice the owner sets, defaulting to something humane — 12 hours for virtual, 24 for in-person — and <em>forced</em> to at least 24 hours on an occupied unit, for the legal reason in Part 4.</div>
+    </div>
+
+    <div>
+      <div class="q">7. A slot booked for next August</div>
+      <div class="a">A calendar with no far edge accumulates bookings nobody will honour, and a renter who books eight months out has learned nothing about a home they cannot move into.</div>
+      <div class="v"><b>Do:</b> a rolling horizon — 60 days by default. Past that, "ask the owner" rather than a bookable slot.</div>
+    </div>
+
+    <div>
+      <div class="q">8. Nobody answers the request</div>
+      <div class="a">The renter waits, the slot stays held, and the day arrives with nothing having happened.</div>
+      <div class="v"><b>Do:</b> the hold expires — 24 hours, or when the notice period runs out, whichever comes first. The request moves to <code>expired</code>, the slot is released, and both sides are told. The same shape as an application expiring, for the same reason.</div>
+    </div>
+
+    <div>
+      <div class="q">9. Somebody cancels an hour before</div>
+      <div class="a">Either side. The other has already rearranged their afternoon.</div>
+      <div class="v"><b>Do:</b> cancellation is always allowed — forcing somebody to attend is not a thing software can do — but it is <em>recorded</em>, the slot returns to the calendar immediately, and the other side is notified through the channel they already use. A pattern of late cancellations is a fact about an account; what to do about it is a later decision, but the record has to start now or it cannot be made.</div>
+    </div>
+
+    <div>
+      <div class="q">10. The owner deletes a window with a tour in it</div>
+      <div class="a">"I'm not free Mondays any more" quietly cancels a confirmed tour, or worse, leaves it dangling outside any window.</div>
+      <div class="v"><b>Do:</b> deleting a window never touches a confirmed booking. The owner is told plainly — "you have one tour on Monday 13th that stays booked" — and can cancel it themselves. A booking is a promise to a named person; a window is only a rule.</div>
+    </div>
+
+    <div>
+      <div class="q">11. The owner changes the slot length after bookings exist</div>
+      <div class="a">2 hours becomes 1. What happens to the 2–4pm already booked?</div>
+      <div class="v"><b>Do:</b> it stays two hours. The length is copied onto the booking when it is made, not read from the setting at display time. A confirmed tour's end time must never move under the person who agreed to it.</div>
+    </div>
+
+    <div>
+      <div class="q">12. Twelve tours in one day</div>
+      <div class="a">A popular listing fills an owner's entire week with viewings.</div>
+      <div class="v"><b>Do:</b> a max-per-day the owner sets. And when demand is that high, the honest answer is an open house — one slot, several attendees — which is scenario 16 and out of scope for v1.</div>
+    </div>
+
+    <div>
+      <div class="q">13. A virtual tour with no link</div>
+      <div class="a">2pm arrives, both people open the thread, and there is nothing to click.</div>
+      <div class="v"><b>Do:</b> a virtual booking is not confirmable without a meeting link — the owner pastes one, or saves a default on their profile that is filled in automatically. Generating links ourselves means a calendar integration, which is a bigger piece; requiring one is a text field and closes the hole today.</div>
+    </div>
+
+    <div>
+      <div class="q">14. A tour on a property that stops being listed</div>
+      <div class="a">The listing is rented or unlisted while a tour sits confirmed on it.</div>
+      <div class="v"><b>Do:</b> unlisting cancels open tour requests on that property with a distinct reason — "no longer available", which reads very differently to a renter than silence — and asks the owner what to do about confirmed ones rather than deciding for them.</div>
+    </div>
+
+    <div>
+      <div class="q">15. A tour request from somebody who has not applied <span class="pill open">judgement</span></div>
+      <div class="a">Perfectly reasonable — most people want to see a place before applying. But the thread and its card were built around an application.</div>
+      <div class="v"><b>Do:</b> allow it. A tour request opens the same kind of thread on its own, and the thread's card shows the tour instead of the application. The card already renders live from the server, so this is a second shape for it rather than a new surface. If an application follows, both cards sit in the same thread — which is the true history of that conversation.</div>
+    </div>
+
+    <div>
+      <div class="q">16. Three people want the same viewing</div>
+      <div class="a">An open house is one slot with several attendees, and the model above is one booking per slot.</div>
+      <div class="v"><b>Do:</b> out of scope for v1, and say so in the UI rather than approximating it. A slot with a capacity is a different booking model — the hold is per seat, cancellation frees one seat not the slot, and the address goes to several people at once. Approximating it with one booking and a note in the chat is how three strangers turn up expecting a private viewing.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 6 -->
+<div class="part">
+  <div class="tag">Part six</div>
+  <h2>Schema &amp; API</h2>
+  <p>What has to exist, and nothing beyond it.</p>
+</div>
+
+<section id="schema">
+  <h3>New tables</h3>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Table</th><th>Holds</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>availability_windows</code></td>
+          <td>owner_id, weekday or date, start/end wall-clock, timezone, kind</td>
+          <td>Wall-clock plus a zone name, never an offset — scenario 2</td>
+        </tr>
+        <tr>
+          <td><code>tour_settings</code></td>
+          <td>owner_id, duration per kind, buffer, travel buffer, min notice, horizon, max/day, default meeting link</td>
+          <td>One row per owner</td>
+        </tr>
+        <tr>
+          <td><code>tours</code></td>
+          <td>renter, owner, onboarding, conversation, kind, <code>starts_at</code>/<code>ends_at</code> (tstzrange), status, hold_expires_at, meeting_link, cancelled_by/reason</td>
+          <td>Duration copied on, not referenced — scenario 11</td>
+        </tr>
+        <tr>
+          <td><code>tour_proposals</code></td>
+          <td>tour_id, proposed ranges, who proposed</td>
+          <td>The two-or-three counter-offer from Part 1</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Changes to what exists</h3>
+  <ul>
+    <li><code>listings</code>: <code>timezone</code> (from the coordinates), <code>is_occupied</code>, <code>allows_in_person</code>.</li>
+    <li><code>conversations</code>: already carries <code>onboarding_id</code>; the context serializer gains a tour alongside the application.</li>
+    <li>A DB exclusion constraint over each owner's confirmed ranges — scenario 3 is not solvable above the database.</li>
+  </ul>
+
+  <h3>Endpoints</h3>
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Method</th><th>Path</th><th>Who</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET</code></td><td><code>/public/listings/{id}/slots?from&amp;to</code></td><td>renter — computed server-side, never in the client</td></tr>
+        <tr><td><code>POST</code></td><td><code>/tenant/tours</code></td><td>renter — request a slot, opens or reuses the thread</td></tr>
+        <tr><td><code>POST</code></td><td><code>/tenant/tours/{id}/cancel</code></td><td>renter</td></tr>
+        <tr><td><code>POST</code></td><td><code>/tenant/tours/{id}/pick</code></td><td>renter — takes one of the owner's alternatives, and it is booked outright</td></tr>
+        <tr><td><code>GET/PUT</code></td><td><code>/owner/tour-settings</code></td><td>owner — settings <em>and</em> availability windows, in one call</td></tr>
+        <tr><td><code>GET</code></td><td><code>/owner/tours?from&amp;to</code></td><td>owner — the calendar's own view, requests included</td></tr>
+        <tr><td><code>GET</code></td><td><code>/owner/tours/competing?starts_at</code></td><td>owner — everyone waiting on one slot, with trust score and applicant detail</td></tr>
+        <tr><td><code>POST</code></td><td><code>/owner/tours/{id}/confirm</code> · <code>/decline</code> · <code>/propose</code> · <code>/cancel</code></td><td>owner</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>Three departures from the list this section first carried</strong>, each made while
+  building it and each worth the note:</p>
+  <ul>
+    <li><code>/owner/availability</code> is gone, folded into <code>/owner/tour-settings</code> as a
+    <code>windows</code> array. The setup wizard writes the whole week in one go, so two endpoints
+    meant two round trips that could half-succeed — a calendar with hours and no durations, or
+    durations and no hours, either of which is a calendar that cannot compute a slot. Sending the
+    week entire also makes the write idempotent: the server deactivates every existing window and
+    lays down what it was given, so saving twice cannot produce two Mondays.</li>
+    <li><code>accept-proposal</code> is <code>pick</code>, because that is what it does. The renter
+    is not accepting a request for consideration; they are choosing one of the times the owner
+    already said works, and the tour is confirmed in that call.</li>
+    <li><code>/owner/tours/competing</code> is new. The comparison screen needs the trust score and
+    the applicant detail for everyone on one slot, and a tour requester need not have applied — so
+    there may be no application row to read a stored percentage from. It is computed from this
+    renter's preferences against this listing, and is <code>null</code> when they have no profile
+    yet. <strong>Never a fallback number:</strong> a constant is indistinguishable from a
+    measurement to the owner reading it. The block deliberately omits date of birth, gender,
+    nationality and country of origin — protected grounds in housing under the Ontario Human Rights
+    Code, and a side-by-side comparison screen is exactly where handing them over would do the
+    damage.</li>
+  </ul>
+
+  <p>Two rules also changed shape once they met a real database:</p>
+  <ul>
+    <li><strong><code>max_per_day</code> counts what is booked, not what is offered.</strong> The
+    first version decremented a per-day allowance as it emitted slots, which meant the cap only ever
+    bit on the second window of a day — an owner with one all-day window and four confirmed tours
+    was still offered a fifth. It is now checked once per day against the confirmed tours on it, and
+    a full day goes quiet rather than offering a slot the request would then have to refuse.</li>
+    <li><strong>The buffer and the travel time pad the existing booking, not the grid.</strong>
+    Stepping the offered times by <code>length + buffer</code> spaces out the slots on an empty day
+    and does nothing whatever around a tour already in the calendar — so a confirmed 2–3pm left 3pm
+    bookable, flush against it, and at another property across town. Each confirmed tour now blocks
+    its own span plus the buffer either side, plus the travel time when both ends are in person at
+    different addresses. Two video calls back to back get no travel time: nobody is going anywhere,
+    and that is the owner's own business.</li>
+  </ul>
+
+  <h3>Jobs</h3>
+  <ul>
+    <li><strong>Expire unanswered requests</strong> — every fifteen minutes, not hourly like the
+    application sweep beside it. A request lives 24 hours and a tour lasts an hour, and both
+    boundaries are ones somebody may be watching: an owner refreshing at 2:05pm for a 2pm viewing
+    should not still see it listed as upcoming.</li>
+    <li><strong>Complete past tours</strong> — mark <code>completed</code> once the end time passes.
+    The same sweep, since it is the same question asked of a different column.</li>
+    <li><strong>Reminders</strong> — to both sides, 24 hours and 1 hour before.</li>
+  </ul>
+</section>
+
+<!-- ─────────────────────────────────────────────────────────── PART 7 -->
+<div class="part">
+  <div class="tag">Part seven</div>
+  <h2>Open decisions</h2>
+  <p>Seven things this spec has taken a position on that are genuinely yours.</p>
+</div>
+
+<section id="open">
+  <ol>
+    <li><strong>Does a confirmed in-person tour release the address?</strong> This spec says yes, at confirmation. It is the biggest single decision here and it edits a rule we shipped a week ago.</li>
+    <li><strong>Tours without an application.</strong> Allowed here. Saying no is simpler to build and probably costs real applications — most people want to see a place first.</li>
+    <li><strong>Default durations.</strong> 30 minutes virtual, 60 in person are guesses. Owners should be able to change them; the defaults decide what most owners never change.</li>
+    <li><strong>Hold length.</strong> 24 hours. Too long and a popular listing freezes; too short and an owner with a job misses it.</li>
+    <li><strong>Who generates the meeting link.</strong> Owner pastes one in v1. A real calendar integration is a much larger piece and probably the right v2.</li>
+    <li><strong>Late cancellations.</strong> Recorded from day one. Whether they ever <em>mean</em> anything — a badge, a limit — is a separate decision that needs the data first.</li>
+    <li><strong>Open houses.</strong> Deferred. If a launch segment is high-demand student housing, that changes the booking model now rather than later.</li>
+  </ol>
+
+  <hr>
+
+  <div class="note good">
+    <div class="h">The smallest version that is honest</div>
+    <p>
+      If only one slice ships: a property time zone, owner windows with one slot
+      length, server-computed slots, request → confirm → decline, the hold with
+      an expiry, and the tour card in the thread that already exists. No
+      counter-proposals, no travel buffers, no open houses, virtual only — which
+      sidesteps both the address question and the RTA notice entirely, and is a
+      working, truthful booking flow that can ship without either decision being
+      made first.
+    </p>
+  </div>
+</section>
+
+<footer>
+  Ampl · tours-and-calendar.html · companion to application-process.html
+</footer>
+
+</main>
+</div>
+</body>
+</html>
